@@ -123,4 +123,28 @@ extension AmplifyPushNotificationsPlugin {
         launchNotification = nil
         flutterApi.nullifyLaunchNotification() { result in }
     }
+
+    public func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        guard response.notification.request.trigger is UNPushNotificationTrigger else {
+            completionHandler()
+            return
+        }
+        
+        let userInfo = response.notification.request.content.userInfo
+        
+        if let launchNotification = launchNotification {
+            if !NSDictionary(dictionary: launchNotification).isEqual(to: userInfo) {
+                self.launchNotification = nil
+                sharedEventsStreamHandlers.notificationOpened.sendEvent(payload: userInfo)
+            }
+        } else {
+            sharedEventsStreamHandlers.notificationOpened.sendEvent(payload: userInfo)
+        }
+        
+        completionHandler()
+    }
 }
